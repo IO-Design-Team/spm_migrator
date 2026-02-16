@@ -34,7 +34,7 @@ void main() {
     );
   }
 
-  green('Migration complete. See the documentation for help.');
+  print(green('Migration complete. See the documentation for help:'));
   print(
     'https://docs.flutter.dev/packages-and-plugins/swift-package-manager/for-plugin-authors',
   );
@@ -82,7 +82,7 @@ void migratePlatform({required String platform, required String pluginName}) {
   final podspec = Podspec.fromJson(jsonDecode(podspecJson.stdout));
 
   if (podspec.subspecs.isNotEmpty) {
-    yellow('Subspecs detected. This will need manual migration.');
+    print(yellow('Subspecs detected. This will need manual migration.'));
   }
 
   final packageSwift = packageSwiftContent(
@@ -118,7 +118,7 @@ void migratePlatform({required String platform, required String pluginName}) {
   ]);
 
   if (bundleGrepResult.stdout.isNotEmpty) {
-    yellow('Resource loading detected. This will need manual migration.');
+    print(yellow('Resource loading detected. This will need manual migration.'));
   }
 
   green('Migration complete for $platform\n');
