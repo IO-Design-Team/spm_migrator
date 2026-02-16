@@ -1,5 +1,6 @@
 name: spm_migrator
 description: Easily migrate a Flutter plugin to support Swift Package Manager
+homepage: https://github.com/IO-Design-Team/spm_migrator
 version: 1.0.0
 
 environment:
