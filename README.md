@@ -3,6 +3,7 @@ Easily migrate a Flutter plugin to support Swift Package Manager
 ## Features
 
 Automatically performs most of the migrations required to support Swift Package Manager
+
 Calls out any known manual migrations required
 
 ## Getting started
