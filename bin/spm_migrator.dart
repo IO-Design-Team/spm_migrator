@@ -31,7 +31,7 @@ void main() async {
 }
 
 bool confirm(String message) {
-  stdout.write('${yellow(message)} (y/n): ');
+  stdout.write('$message (y/n): ');
   final answer = stdin.readLineSync();
   return answer == 'y';
 }
