@@ -62,7 +62,17 @@ void migratePlatform({required String platform, required String pluginName}) {
 
   final assetsDirectory = Directory(path.join(platform, 'Assets'));
   if (assetsDirectory.existsSync()) {
-    assetsDirectory.copySync(path.join(sourcesDirectory.path, 'Assets'));
+    final contents = assetsDirectory.listSync();
+
+    // The plugin template created an Assets directory with a .gitkeep file
+    // Do not copy it if it is the only file in the directory
+    final onlyGitkeep =
+        contents.length == 1 &&
+        path.basename(contents.first.path) == '.gitkeep';
+    if (contents.isNotEmpty && !onlyGitkeep) {
+      assetsDirectory.copySync(path.join(sourcesDirectory.path, 'Assets'));
+    }
+
     assetsDirectory.deleteSync(recursive: true);
   }
 
