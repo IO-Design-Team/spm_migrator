@@ -159,7 +159,9 @@ void migratePlatform({required String platform, required String pluginName}) {
   final hasPrivacyManifest = privacyManifest.existsSync();
 
   if (hasPrivacyManifest) {
-    privacyManifest.copySync(sourcesDirectory.path);
+    privacyManifest.copySync(
+      path.join(sourcesDirectory.path, 'PrivacyInfo.xcprivacy'),
+    );
     Directory(path.join(platform, 'Resources')).deleteSync(recursive: true);
   }
 
@@ -204,7 +206,7 @@ void migratePlatform({required String platform, required String pluginName}) {
     path.join(platform, pluginName, 'Package.swift'),
   ).writeAsStringSync(packageSwift);
 
-  if (podspec.dependencies.keys.where((e) => e != 'Flutter').isNotEmpty) {
+  if (podspec.dependencies.keys.any((e) => e != 'Flutter')) {
     needsManualMigration('Podspec dependencies');
   }
 
@@ -224,9 +226,9 @@ void migratePlatform({required String platform, required String pluginName}) {
 
   final bundleGrepResult = Process.runSync('grep', [
     '-r',
-    '--include="*.swift"',
+    '--include=*.swift',
     r'Bundle(for: Self\.self)',
-    '.',
+    platform,
   ]);
 
   if (bundleGrepResult.stdout.isNotEmpty) {
@@ -240,11 +242,12 @@ void migratePigeon({required String pluginName}) {
   final pigeonsFile = File(path.join('pigeons', 'messages.dart'));
   if (pigeonsFile.existsSync()) {
     final content = pigeonsFile.readAsStringSync();
-    content.replaceFirstMapped(
+    final newContent = content.replaceFirstMapped(
       RegExp(r"swiftOut: '(.+?)\/Classes\/messages.g.swift',"),
       (m) =>
           "swiftOut: '${m[1]}/$pluginName/Sources/$pluginName/messages.g.swift',",
     );
+    pigeonsFile.writeAsStringSync(newContent);
   }
 }
 
@@ -297,8 +300,8 @@ Future<void> buildForPlatform({
       ? '--no-enable-swift-package-manager'
       : '--enable-swift-package-manager';
   Process.runSync('flutter', ['config', configFlag]);
-  Process.runSync('flutter', ['clean']);
-  Process.runSync('flutter', ['pub', 'get']);
+  Process.runSync('flutter', ['clean'], workingDirectory: 'example');
+  Process.runSync('flutter', ['pub', 'get'], workingDirectory: 'example');
   final process = await Process.start(
     'flutter',
     ['build', platform],
@@ -309,7 +312,7 @@ Future<void> buildForPlatform({
   final exitCode = await process.exitCode;
   if (exitCode != 0) {
     print(red('$packageManager build failed for $platform'));
-    exit(0);
+    exit(exitCode);
   }
 }
 
