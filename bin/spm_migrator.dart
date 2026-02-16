@@ -28,6 +28,14 @@ void main() {
     );
   }
 
+  final gitignoreFile = File('.gitignore');
+  if (gitignoreFile.existsSync()) {
+    final lines = gitignoreFile.readAsLinesSync();
+    if (!lines.contains('.build/')) lines.add('.build/');
+    if (!lines.contains('.swiftpm/')) lines.add('.swiftpm/');
+    gitignoreFile.writeAsStringSync(lines.join('\n'));
+  }
+
   print(green('Migration complete. See the documentation for help:'));
   print(
     'https://docs.flutter.dev/packages-and-plugins/swift-package-manager/for-plugin-authors',
