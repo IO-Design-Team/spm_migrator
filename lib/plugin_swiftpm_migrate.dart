@@ -1,8 +1,25 @@
-/// Support for doing something awesome.
-///
-/// More dartdocs go here.
-library;
+import 'dart:io';
 
-export 'src/plugin_swiftpm_migrate_base.dart';
+import 'package:path/path.dart' as path;
+import 'package:pubspec_parse/pubspec_parse.dart';
 
-// TODO: Export any libraries intended for clients of this package.
+void main() {
+  final pubspecFile = File('pubspec.yaml');
+  final pubspecContent = pubspecFile.readAsStringSync();
+  final pubspec = Pubspec.parse(pubspecContent);
+
+  for (final platform in ['ios', 'macos', 'darwin']) {
+    migratePlatform(platform: platform, pluginName: pubspec.name);
+  }
+}
+
+void migratePlatform({required String platform, required String pluginName}) {
+  final podspecJson = Process.runSync('pod', [
+    'ipc',
+    'spec',
+  ], workingDirectory: platform);
+
+  Directory(
+    path.join(platform, pluginName, 'Sources', pluginName),
+  ).createSync(recursive: true);
+}
