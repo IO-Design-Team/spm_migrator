@@ -5,6 +5,10 @@ import 'package:ansicolor/ansicolor.dart';
 import 'package:path/path.dart' as path;
 import 'package:pubspec_parse/pubspec_parse.dart';
 import 'package:spm_migrator/src/model/podspec.dart';
+import 'package:spm_migrator/src/package_swift.dart';
+
+/// Yellow pen
+final yellow = AnsiPen()..yellow();
 
 void main() {
   final pubspecFile = File('pubspec.yaml');
@@ -30,13 +34,6 @@ void main() {
 
 /// Migrate a plugin platform to Swift Package Manager
 void migratePlatform({required String platform, required String pluginName}) {
-  final podspecJson = Process.runSync('pod', [
-    'ipc',
-    'spec',
-  ], workingDirectory: platform);
-
-  final podspec = Podspec.fromJson(jsonDecode(podspecJson.stdout));
-
   final sourcesDirectory = Directory(
     path.join(platform, pluginName, 'Sources', pluginName),
   );
@@ -47,7 +44,9 @@ void migratePlatform({required String platform, required String pluginName}) {
     path.join(platform, 'Resources', 'PrivacyInfo.xcprivacy'),
   );
 
-  if (privacyManifest.existsSync()) {
+  final hasPrivacyManifest = privacyManifest.existsSync();
+
+  if (hasPrivacyManifest) {
     privacyManifest.copySync(sourcesDirectory.path);
     Directory(path.join(platform, 'Resources')).deleteSync(recursive: true);
   }
@@ -61,6 +60,42 @@ void migratePlatform({required String platform, required String pluginName}) {
   final classesDirectory = Directory(path.join(platform, 'Classes'));
   classesDirectory.copySync(sourcesDirectory.path);
   classesDirectory.deleteSync(recursive: true);
+
+  final podspecJson = Process.runSync('pod', [
+    'ipc',
+    'spec',
+    '$pluginName.podspec',
+  ], workingDirectory: platform);
+
+  final podspec = Podspec.fromJson(jsonDecode(podspecJson.stdout));
+
+  if (podspec.subspecs.isNotEmpty) {
+    yellow('Subspecs detected. These will need manual migration.');
+  }
+
+  final packageSwift = packageSwiftContent(
+    pluginName: pluginName,
+    iOSTarget: podspec.platforms['ios'],
+    macOSTarget: podspec.platforms['macos'],
+    hasPrivacyManifest: hasPrivacyManifest,
+  );
+  File(
+    path.join(platform, pluginName, 'Package.swift'),
+  ).writeAsStringSync(packageSwift);
+
+  final podspecFile = File(path.join(platform, '$pluginName.podspec'));
+  final podspecContent = podspecFile.readAsStringSync();
+  final newPodspecContent = podspecContent
+      .replaceFirst(
+        "s.source_files = 'Classes/**/*.swift'",
+        "s.source_files = '$pluginName/Sources/$pluginName/**/*.swift'",
+      )
+      .replaceFirst(
+        "s.resource_bundles = {'${pluginName}_privacy' => ['Resources/PrivacyInfo.xcprivacy']}",
+        "s.resource_bundles = {'${pluginName}_privacy' => ['$pluginName/Sources/$pluginName/PrivacyInfo.xcprivacy']}",
+      );
+
+  podspecFile.writeAsStringSync(newPodspecContent);
 }
 
 /// Extension methods on [Directory]

@@ -13,11 +13,19 @@ class Podspec {
   /// The platforms that the plugin supports
   final Map<String, String> platforms;
 
+  /// Subspecs, if any
+  final List subspecs;
+
   /// Constructor
-  const Podspec({required this.dependencies, required this.platforms});
+  const Podspec({
+    required this.dependencies,
+    required this.platforms,
+    this.subspecs = const [],
+  });
 
   /// From json
-  factory Podspec.fromJson(Map<String, dynamic> json) => _$PodspecFromJson(json);
+  factory Podspec.fromJson(Map<String, dynamic> json) =>
+      _$PodspecFromJson(json);
 
   /// To json
   Map<String, dynamic> toJson() => _$PodspecToJson(this);

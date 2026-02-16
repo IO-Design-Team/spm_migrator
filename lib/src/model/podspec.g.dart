@@ -12,9 +12,11 @@ Podspec _$PodspecFromJson(Map<String, dynamic> json) => Podspec(
         MapEntry(k, (e as List<dynamic>).map((e) => e as String).toList()),
   ),
   platforms: Map<String, String>.from(json['platforms'] as Map),
+  subspecs: json['subspecs'] as List<dynamic>? ?? const [],
 );
 
 Map<String, dynamic> _$PodspecToJson(Podspec instance) => <String, dynamic>{
   'dependencies': instance.dependencies,
   'platforms': instance.platforms,
+  'subspecs': instance.subspecs,
 };

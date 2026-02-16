@@ -6,6 +6,7 @@ environment:
   sdk: ^3.11.0
 
 dependencies:
+  ansicolor: ^2.0.3
   json_annotation: ^4.10.0
   meta: ^1.18.1
   path: ^1.9.1
