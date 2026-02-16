@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as path;
 import 'package:pubspec_parse/pubspec_parse.dart';
 import 'package:recase/recase.dart';
@@ -9,25 +10,75 @@ import 'package:spm_migrator/podspec.dart';
 import 'package:spm_migrator/package_swift.dart';
 import 'package:spm_migrator/pubspec.dart';
 
-void main() async {
+void main(List<String> args) async {
+  final runner =
+      CommandRunner<void>(
+          'spm_migrator',
+          'Easily migrate a Flutter plugin to support Swift Package Manager',
+        )
+        ..addCommand(MigrateCommand())
+        ..addCommand(ValidateCommand());
+
+  await runner.run(args);
+}
+
+class MigrateCommand extends Command<void> {
+  @override
+  String get name => 'migrate';
+
+  @override
+  String get description =>
+      'Migrate a Flutter plugin to support Swift Package Manager';
+
+  @override
+  Future<void> run() async {
+    final pubspec = parsePubspec();
+    final pluginName = pubspec.name;
+
+    for (final platform in ['ios', 'macos', 'darwin']) {
+      migratePlatform(platform: platform, pluginName: pluginName);
+    }
+
+    migratePigeon(pluginName: pluginName);
+    migrateGitignore();
+    await validate(pubspec: pubspec);
+
+    print(green('Migration complete. See the documentation for help:'));
+    print(
+      'https://docs.flutter.dev/packages-and-plugins/swift-package-manager/for-plugin-authors',
+    );
+  }
+}
+
+class ValidateCommand extends Command<void> {
+  @override
+  String get name => 'validate';
+
+  @override
+  String get description =>
+      'Validate CocoaPods and SwiftPM builds for all supported platforms';
+
+  @override
+  Future<void> run() async {
+    final pubspec = parsePubspec();
+    final supportedPlatforms = readSupportedPlatforms(pubspec.flutter);
+    final supportedDarwinPlatforms = supportedPlatforms.intersection({
+      'ios',
+      'macos',
+    });
+
+    for (final platform in supportedDarwinPlatforms) {
+      await validatePlatform(platform: platform);
+    }
+
+    print(green('Validation complete'));
+  }
+}
+
+Pubspec parsePubspec() {
   final pubspecFile = File('pubspec.yaml');
   final pubspecContent = pubspecFile.readAsStringSync();
-  final pubspec = Pubspec.parse(pubspecContent);
-
-  final pluginName = pubspec.name;
-
-  for (final platform in ['ios', 'macos', 'darwin']) {
-    migratePlatform(platform: platform, pluginName: pluginName);
-  }
-
-  migratePigeon(pluginName: pluginName);
-  migrateGitignore();
-  await validate(pubspec: pubspec);
-
-  print(green('Migration complete. See the documentation for help:'));
-  print(
-    'https://docs.flutter.dev/packages-and-plugins/swift-package-manager/for-plugin-authors',
-  );
+  return Pubspec.parse(pubspecContent);
 }
 
 bool confirm(String message) {
