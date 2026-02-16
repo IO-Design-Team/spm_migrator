@@ -8,7 +8,7 @@ import 'package:spm_migrator/pens.dart';
 import 'package:spm_migrator/podspec.dart';
 import 'package:spm_migrator/package_swift.dart';
 
-void main() {
+void main() async {
   final pubspecFile = File('pubspec.yaml');
   final pubspecContent = pubspecFile.readAsStringSync();
   final pubspec = Pubspec.parse(pubspecContent);
@@ -21,7 +21,7 @@ void main() {
 
   migratePigeon(pluginName: pluginName);
   migrateGitignore();
-  validate(pubspec: pubspec);
+  await validate(pubspec: pubspec);
 
   print(green('Migration complete. See the documentation for help:'));
   print(
@@ -210,7 +210,7 @@ No .gitignore file found in this directory. Make sure to ignore the following:
   }
 }
 
-void validate({required Pubspec pubspec}) {
+Future<void> validate({required Pubspec pubspec}) async {
   if (!File(path.join('example', 'pubspec.yaml')).existsSync()) {
     print(yellow('No example project found. Manual validation is required.'));
     return;
@@ -223,11 +223,44 @@ void validate({required Pubspec pubspec}) {
     'macos',
   });
   for (final platform in supportedDarwinPlatforms) {
-    validatePlatform(platform: platform);
+    await validatePlatform(platform: platform);
   }
 }
 
-void validatePlatform({required String platform}) {}
+Future<void> validatePlatform({required String platform}) async {
+  print('Validating $platform CocoaPods build...');
+  Process.runSync('flutter', ['config', '--no-enable-swift-package-manager']);
+  final cocoapodsProcess = await Process.start(
+    'flutter',
+    ['build', platform],
+    workingDirectory: 'example',
+    mode: ProcessStartMode.inheritStdio,
+  );
+
+  final cocoapodsExitCode = await cocoapodsProcess.exitCode;
+  if (cocoapodsExitCode != 0) {
+    print(red('$platform CocoaPods build failed'));
+    exit(0);
+  }
+
+  print(green('$platform CocoaPods build successful\n'));
+
+  print('Validating $platform SwiftPM build...');
+  Process.runSync('flutter', ['config', '--enable-swift-package-manager']);
+  final spmProcess = await Process.start(
+    'flutter',
+    ['build', platform],
+    workingDirectory: 'example',
+    mode: ProcessStartMode.inheritStdio,
+  );
+  final spmExitCode = await spmProcess.exitCode;
+  if (spmExitCode != 0) {
+    print(red('$platform SwiftPM build failed'));
+    exit(0);
+  }
+
+  print(green('$platform SwiftPM build successful\n'));
+}
 
 extension DirectoryExtension on Directory {
   void copySync(String newPath) {
