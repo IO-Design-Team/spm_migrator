@@ -11,6 +11,7 @@ dependencies:
   meta: ^1.18.1
   path: ^1.9.1
   pubspec_parse: ^1.5.0
+  recase: ^4.1.0
 
 dev_dependencies:
   rexios_lints: ^17.0.3

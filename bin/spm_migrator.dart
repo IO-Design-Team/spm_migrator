@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:pubspec_parse/pubspec_parse.dart';
+import 'package:recase/recase.dart';
 import 'package:spm_migrator/pens.dart';
 import 'package:spm_migrator/podspec.dart';
 import 'package:spm_migrator/package_swift.dart';
@@ -70,10 +71,12 @@ void migratePlatform({required String platform, required String pluginName}) {
   if (swiftFiles.isNotEmpty && objectiveCFiles.isNotEmpty) {
     print(
       yellow(
-        'The $platform directory contains both Swift and Objective-C files. SwiftPM does not support mixed language targets. If you did not write any Objective-C, these files can be safely deleted.',
+        'The $platform directory contains both Swift and Objective-C files.'
+        ' SwiftPM does not support mixed language targets.'
+        ' If you did not write any Objective-C, the plugin can be automatically migrated.',
       ),
     );
-    stdout.write(yellow('Delete all Objective-C files? (y/n): '));
+    stdout.write(yellow('Migrate plugin to Swift only? (y/n): '));
     final answer = stdin.readLineSync();
     if (answer != 'y') {
       print(red('Migration aborted'));
@@ -81,6 +84,31 @@ void migratePlatform({required String platform, required String pluginName}) {
     }
     for (final file in objectiveCFiles) {
       file.deleteSync();
+    }
+
+    final pluginClass = '${pluginName.pascalCase}Plugin';
+
+    final swiftPluginFileName = 'Swift$pluginClass.swift';
+    final swiftPluginFile = File(
+      path.join(platform, 'Classes', swiftPluginFileName),
+    );
+    if (swiftPluginFile.existsSync()) {
+      final pluginSwiftContent = swiftPluginFile.readAsStringSync();
+      final newPluginSwiftContent = pluginSwiftContent.replaceAll(
+        'Swift$pluginClass',
+        pluginClass,
+      );
+      swiftPluginFile.writeAsStringSync(newPluginSwiftContent);
+
+      swiftPluginFile.renameSync(
+        path.join(platform, 'Classes', '$pluginClass.swift'),
+      );
+    } else {
+      print(
+        yellow(
+          '$swiftPluginFileName not found. Manual migration may be required.',
+        ),
+      );
     }
   }
 
