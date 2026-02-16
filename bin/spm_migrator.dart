@@ -34,6 +34,14 @@ void main() {
     if (!lines.contains('.build/')) lines.add('.build/');
     if (!lines.contains('.swiftpm/')) lines.add('.swiftpm/');
     gitignoreFile.writeAsStringSync(lines.join('\n'));
+  } else {
+    print(
+      yellow('''
+No .gitignore file found in this directory. Make sure to ignore the following:
+.build/
+.swiftpm/
+'''),
+    );
   }
 
   print(green('Migration complete. See the documentation for help:'));
