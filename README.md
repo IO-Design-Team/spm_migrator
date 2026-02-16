@@ -11,4 +11,6 @@ Calls out any known manual migrations required
 
 ## Usage
 
-Run `spm_migrator` in the root of your plugin
+Run `spm_migrator migrate` in the root of your plugin
+
+Run `spm_migrator validate` to validate the builds for all supported platforms
