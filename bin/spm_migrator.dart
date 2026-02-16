@@ -19,31 +19,9 @@ void main() {
     migratePlatform(platform: platform, pluginName: pluginName);
   }
 
-  final pigeonsFile = File(path.join('pigeons', 'messages.dart'));
-  if (pigeonsFile.existsSync()) {
-    final content = pigeonsFile.readAsStringSync();
-    content.replaceFirstMapped(
-      RegExp(r"swiftOut: '(.+?)\/Classes\/messages.g.swift',"),
-      (m) =>
-          "swiftOut: '${m[1]}/$pluginName/Sources/$pluginName/messages.g.swift',",
-    );
-  }
-
-  final gitignoreFile = File('.gitignore');
-  if (gitignoreFile.existsSync()) {
-    final lines = gitignoreFile.readAsLinesSync();
-    if (!lines.contains('.build/')) lines.add('.build/');
-    if (!lines.contains('.swiftpm/')) lines.add('.swiftpm/');
-    gitignoreFile.writeAsStringSync(lines.join('\n'));
-  } else {
-    print(
-      yellow('''
-No .gitignore file found in this directory. Make sure to ignore the following:
-.build/
-.swiftpm/
-'''),
-    );
-  }
+  migratePigeon(pluginName: pluginName);
+  migrateGitignore();
+  validate(pubspec: pubspec);
 
   print(green('Migration complete. See the documentation for help:'));
   print(
@@ -201,6 +179,55 @@ void migratePlatform({required String platform, required String pluginName}) {
 
   print(green('Migration complete for $platform\n'));
 }
+
+void migratePigeon({required String pluginName}) {
+  final pigeonsFile = File(path.join('pigeons', 'messages.dart'));
+  if (pigeonsFile.existsSync()) {
+    final content = pigeonsFile.readAsStringSync();
+    content.replaceFirstMapped(
+      RegExp(r"swiftOut: '(.+?)\/Classes\/messages.g.swift',"),
+      (m) =>
+          "swiftOut: '${m[1]}/$pluginName/Sources/$pluginName/messages.g.swift',",
+    );
+  }
+}
+
+void migrateGitignore() {
+  final gitignoreFile = File('.gitignore');
+  if (gitignoreFile.existsSync()) {
+    final lines = gitignoreFile.readAsLinesSync();
+    if (!lines.contains('.build/')) lines.add('.build/');
+    if (!lines.contains('.swiftpm/')) lines.add('.swiftpm/');
+    gitignoreFile.writeAsStringSync(lines.join('\n'));
+  } else {
+    print(
+      yellow('''
+No .gitignore file found in this directory. Make sure to ignore the following:
+.build/
+.swiftpm/
+'''),
+    );
+  }
+}
+
+void validate({required Pubspec pubspec}) {
+  if (!File(path.join('example', 'pubspec.yaml')).existsSync()) {
+    print(yellow('No example project found. Manual validation is required.'));
+    return;
+  }
+
+  final supportedPlatforms =
+      pubspec.flutter?['plugin']?['platforms']?.keys as List<String>? ?? [];
+  final supportedDarwinPlatforms = supportedPlatforms.toSet().intersection({
+    'ios',
+    'macos',
+  });
+  for (final platform in supportedDarwinPlatforms) {
+    validatePlatform(platform: platform);
+  }
+}
+
+void validatePlatform({required String platform}) {}
 
 extension DirectoryExtension on Directory {
   void copySync(String newPath) {
