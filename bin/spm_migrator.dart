@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:ansicolor/ansicolor.dart';
 import 'package:path/path.dart' as path;
 import 'package:pubspec_parse/pubspec_parse.dart';
-import 'package:spm_migrator/src/model/podspec.dart';
-import 'package:spm_migrator/src/package_swift.dart';
+import 'package:spm_migrator/podspec.dart';
+import 'package:spm_migrator/package_swift.dart';
 
 /// Yellow pen
 final yellow = AnsiPen()..yellow();
