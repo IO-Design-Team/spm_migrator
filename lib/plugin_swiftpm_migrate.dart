@@ -10,6 +10,9 @@ import 'package:spm_migrator/src/package_swift.dart';
 /// Yellow pen
 final yellow = AnsiPen()..yellow();
 
+/// Green pen
+final green = AnsiPen()..green();
+
 void main() {
   final pubspecFile = File('pubspec.yaml');
   final pubspecContent = pubspecFile.readAsStringSync();
@@ -30,10 +33,19 @@ void main() {
           "swiftOut: '${m[1]}/$pluginName/Sources/$pluginName/messages.g.swift',",
     );
   }
+
+  green('Migration complete. See the documentation for help.');
+  print(
+    'https://docs.flutter.dev/packages-and-plugins/swift-package-manager/for-plugin-authors',
+  );
 }
 
 /// Migrate a plugin platform to Swift Package Manager
 void migratePlatform({required String platform, required String pluginName}) {
+  if (!Directory(platform).existsSync()) return;
+
+  print('Migrating $platform...');
+
   final sourcesDirectory = Directory(
     path.join(platform, pluginName, 'Sources', pluginName),
   );
@@ -70,7 +82,7 @@ void migratePlatform({required String platform, required String pluginName}) {
   final podspec = Podspec.fromJson(jsonDecode(podspecJson.stdout));
 
   if (podspec.subspecs.isNotEmpty) {
-    yellow('Subspecs detected. These will need manual migration.');
+    yellow('Subspecs detected. This will need manual migration.');
   }
 
   final packageSwift = packageSwiftContent(
@@ -96,6 +108,20 @@ void migratePlatform({required String platform, required String pluginName}) {
       );
 
   podspecFile.writeAsStringSync(newPodspecContent);
+
+  /// grep -r --include="*.swift" "Bundle(for: Self\.self)" .
+  final bundleGrepResult = Process.runSync('grep', [
+    '-r',
+    '--include="*.swift"',
+    r'Bundle(for: Self\.self)',
+    '.',
+  ]);
+
+  if (bundleGrepResult.stdout.isNotEmpty) {
+    yellow('Resource loading detected. This will need manual migration.');
+  }
+
+  green('Migration complete for $platform\n');
 }
 
 /// Extension methods on [Directory]
