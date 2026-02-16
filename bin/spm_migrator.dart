@@ -199,7 +199,7 @@ void migratePlatform({required String platform, required String pluginName}) {
     needsManualMigration('Resource loading');
   }
 
-  green('Migration complete for $platform\n');
+  print(green('Migration complete for $platform\n'));
 }
 
 extension DirectoryExtension on Directory {
