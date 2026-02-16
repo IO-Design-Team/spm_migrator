@@ -4,7 +4,7 @@ import 'package:meta/meta.dart';
 part 'podspec.g.dart';
 
 /// The fields from the podspec that we need for the SPM migration
-@JsonSerializable()
+@JsonSerializable(createToJson: false)
 @immutable
 class Podspec {
   /// The dependencies of the plugin
@@ -26,7 +26,4 @@ class Podspec {
   /// From json
   factory Podspec.fromJson(Map<String, dynamic> json) =>
       _$PodspecFromJson(json);
-
-  /// To json
-  Map<String, dynamic> toJson() => _$PodspecToJson(this);
 }

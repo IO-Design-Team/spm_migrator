@@ -7,6 +7,7 @@ import 'package:recase/recase.dart';
 import 'package:spm_migrator/pens.dart';
 import 'package:spm_migrator/podspec.dart';
 import 'package:spm_migrator/package_swift.dart';
+import 'package:spm_migrator/pubspec.dart';
 
 void main() async {
   final pubspecFile = File('pubspec.yaml');
@@ -216,9 +217,8 @@ Future<void> validate({required Pubspec pubspec}) async {
     return;
   }
 
-  final supportedPlatforms =
-      pubspec.flutter?['plugin']?['platforms']?.keys as List<String>? ?? [];
-  final supportedDarwinPlatforms = supportedPlatforms.toSet().intersection({
+  final supportedPlatforms = readSupportedPlatforms(pubspec.flutter);
+  final supportedDarwinPlatforms = supportedPlatforms.intersection({
     'ios',
     'macos',
   });
@@ -228,7 +228,7 @@ Future<void> validate({required Pubspec pubspec}) async {
 }
 
 Future<void> validatePlatform({required String platform}) async {
-  print('Validating $platform CocoaPods build...');
+  print('Validating CocoaPods build for $platform...');
   Process.runSync('flutter', ['config', '--no-enable-swift-package-manager']);
   final cocoapodsProcess = await Process.start(
     'flutter',
@@ -239,13 +239,13 @@ Future<void> validatePlatform({required String platform}) async {
 
   final cocoapodsExitCode = await cocoapodsProcess.exitCode;
   if (cocoapodsExitCode != 0) {
-    print(red('$platform CocoaPods build failed'));
+    print(red('CocoaPods build failed for $platform'));
     exit(0);
   }
 
-  print(green('$platform CocoaPods build successful\n'));
+  print(green('CocoaPods build successful for $platform\n'));
 
-  print('Validating $platform SwiftPM build...');
+  print('Validating SwiftPM build for $platform...');
   Process.runSync('flutter', ['config', '--enable-swift-package-manager']);
   final spmProcess = await Process.start(
     'flutter',
@@ -255,11 +255,11 @@ Future<void> validatePlatform({required String platform}) async {
   );
   final spmExitCode = await spmProcess.exitCode;
   if (spmExitCode != 0) {
-    print(red('$platform SwiftPM build failed'));
+    print(red('SwiftPM build failed for $platform'));
     exit(0);
   }
 
-  print(green('$platform SwiftPM build successful\n'));
+  print(green('SwiftPM build successful for $platform\n'));
 }
 
 extension DirectoryExtension on Directory {
