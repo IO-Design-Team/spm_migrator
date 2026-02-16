@@ -30,6 +30,12 @@ void main() async {
   );
 }
 
+bool confirm(String message) {
+  stdout.write('${yellow(message)} (y/n): ');
+  final answer = stdin.readLineSync();
+  return answer == 'y';
+}
+
 void needsManualMigration(String item) {
   print(yellow('$item detected. This will need manual migration.'));
 }
@@ -55,9 +61,7 @@ void migratePlatform({required String platform, required String pluginName}) {
         ' If you did not write any Objective-C, the plugin can be automatically migrated.',
       ),
     );
-    stdout.write(yellow('Migrate plugin to Swift only? (y/n): '));
-    final answer = stdin.readLineSync();
-    if (answer != 'y') {
+    if (!confirm('Migrate plugin to Swift only?')) {
       print(red('Migration aborted'));
       return;
     }
@@ -214,6 +218,13 @@ No .gitignore file found in this directory. Make sure to ignore the following:
 Future<void> validate({required Pubspec pubspec}) async {
   if (!File(path.join('example', 'pubspec.yaml')).existsSync()) {
     print(yellow('No example project found. Manual validation is required.'));
+    return;
+  }
+
+  if (!confirm(
+    'Do you want to validate the builds for all supported platforms?'
+    ' If manual migrations are required, the build will likely fail.',
+  )) {
     return;
   }
 
