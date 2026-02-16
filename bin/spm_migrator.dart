@@ -289,38 +289,37 @@ Future<void> validate({required Pubspec pubspec}) async {
   }
 }
 
-Future<void> validatePlatform({required String platform}) async {
-  print('Validating CocoaPods build for $platform...');
-  Process.runSync('flutter', ['config', '--no-enable-swift-package-manager']);
-  final cocoapodsProcess = await Process.start(
+Future<void> buildForPlatform({
+  required String platform,
+  required String packageManager,
+}) async {
+  final configFlag = packageManager == 'CocoaPods'
+      ? '--no-enable-swift-package-manager'
+      : '--enable-swift-package-manager';
+  Process.runSync('flutter', ['config', configFlag]);
+  Process.runSync('flutter', ['clean']);
+  Process.runSync('flutter', ['pub', 'get']);
+  final process = await Process.start(
     'flutter',
     ['build', platform],
     workingDirectory: 'example',
     mode: ProcessStartMode.inheritStdio,
   );
 
-  final cocoapodsExitCode = await cocoapodsProcess.exitCode;
-  if (cocoapodsExitCode != 0) {
-    print(red('CocoaPods build failed for $platform'));
+  final exitCode = await process.exitCode;
+  if (exitCode != 0) {
+    print(red('$packageManager build failed for $platform'));
     exit(0);
   }
+}
 
+Future<void> validatePlatform({required String platform}) async {
+  print('Validating CocoaPods build for $platform...');
+  await buildForPlatform(platform: platform, packageManager: 'CocoaPods');
   print(green('CocoaPods build successful for $platform\n'));
 
   print('Validating SwiftPM build for $platform...');
-  Process.runSync('flutter', ['config', '--enable-swift-package-manager']);
-  final spmProcess = await Process.start(
-    'flutter',
-    ['build', platform],
-    workingDirectory: 'example',
-    mode: ProcessStartMode.inheritStdio,
-  );
-  final spmExitCode = await spmProcess.exitCode;
-  if (spmExitCode != 0) {
-    print(red('SwiftPM build failed for $platform'));
-    exit(0);
-  }
-
+  await buildForPlatform(platform: platform, packageManager: 'SwiftPM');
   print(green('SwiftPM build successful for $platform\n'));
 }
 
