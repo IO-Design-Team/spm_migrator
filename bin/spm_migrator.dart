@@ -59,6 +59,31 @@ void migratePlatform({required String platform, required String pluginName}) {
 
   print('Migrating $platform...');
 
+  final classesDirectory = Directory(path.join(platform, 'Classes'));
+  final swiftFiles = classesDirectory.listSync().whereType<File>().where(
+    (e) => path.extension(e.path) == '.swift',
+  );
+  final objectiveCFiles = classesDirectory.listSync().whereType<File>().where(
+    (e) => {'.m', '.h'}.contains(path.extension(e.path)),
+  );
+
+  if (swiftFiles.isNotEmpty && objectiveCFiles.isNotEmpty) {
+    print(
+      yellow(
+        'The $platform directory contains both Swift and Objective-C files. SwiftPM does not support mixed language targets. If you did not write any Objective-C, these files can be safely deleted.',
+      ),
+    );
+    stdout.write(yellow('Delete all Objective-C files? (y/n): '));
+    final answer = stdin.readLineSync();
+    if (answer != 'y') {
+      print(red('Migration aborted'));
+      return;
+    }
+    for (final file in objectiveCFiles) {
+      file.deleteSync();
+    }
+  }
+
   final sourcesDirectory = Directory(
     path.join(platform, pluginName, 'Sources', pluginName),
   );
@@ -92,7 +117,6 @@ void migratePlatform({required String platform, required String pluginName}) {
     assetsDirectory.deleteSync(recursive: true);
   }
 
-  final classesDirectory = Directory(path.join(platform, 'Classes'));
   classesDirectory.copySync(sourcesDirectory.path);
   classesDirectory.deleteSync(recursive: true);
 
