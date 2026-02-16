@@ -1,17 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:ansicolor/ansicolor.dart';
 import 'package:path/path.dart' as path;
 import 'package:pubspec_parse/pubspec_parse.dart';
+import 'package:spm_migrator/pens.dart';
 import 'package:spm_migrator/podspec.dart';
 import 'package:spm_migrator/package_swift.dart';
-
-/// Yellow pen
-final yellow = AnsiPen()..yellow();
-
-/// Green pen
-final green = AnsiPen()..green();
 
 void main() {
   final pubspecFile = File('pubspec.yaml');
@@ -40,7 +34,10 @@ void main() {
   );
 }
 
-/// Migrate a plugin platform to Swift Package Manager
+void needsManualMigration(String item) {
+  print(yellow('$item detected. This will need manual migration.'));
+}
+
 void migratePlatform({required String platform, required String pluginName}) {
   if (!Directory(platform).existsSync()) return;
 
@@ -82,7 +79,7 @@ void migratePlatform({required String platform, required String pluginName}) {
   final podspec = Podspec.fromJson(jsonDecode(podspecJson.stdout));
 
   if (podspec.subspecs.isNotEmpty) {
-    print(yellow('Subspecs detected. This will need manual migration.'));
+    needsManualMigration('Subspecs');
   }
 
   final packageSwift = packageSwiftContent(
@@ -94,6 +91,10 @@ void migratePlatform({required String platform, required String pluginName}) {
   File(
     path.join(platform, pluginName, 'Package.swift'),
   ).writeAsStringSync(packageSwift);
+
+  if (podspec.dependencies.keys.where((e) => e != 'Flutter').isNotEmpty) {
+    needsManualMigration('Podspec dependencies');
+  }
 
   final podspecFile = File(path.join(platform, '$pluginName.podspec'));
   final podspecContent = podspecFile.readAsStringSync();
@@ -109,7 +110,6 @@ void migratePlatform({required String platform, required String pluginName}) {
 
   podspecFile.writeAsStringSync(newPodspecContent);
 
-  /// grep -r --include="*.swift" "Bundle(for: Self\.self)" .
   final bundleGrepResult = Process.runSync('grep', [
     '-r',
     '--include="*.swift"',
@@ -118,15 +118,13 @@ void migratePlatform({required String platform, required String pluginName}) {
   ]);
 
   if (bundleGrepResult.stdout.isNotEmpty) {
-    print(yellow('Resource loading detected. This will need manual migration.'));
+    needsManualMigration('Resource loading');
   }
 
   green('Migration complete for $platform\n');
 }
 
-/// Extension methods on [Directory]
 extension DirectoryExtension on Directory {
-  /// Copies this directory and all of its contents to [newPath]
   void copySync(String newPath) {
     for (final file in listSync(recursive: true).whereType<File>()) {
       final relativePath = path.relative(file.path, from: this.path);

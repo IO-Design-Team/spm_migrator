@@ -3,7 +3,6 @@ String packageSwiftContent({
   required String pluginName,
   String? iOSTarget,
   String? macOSTarget,
-  
   bool hasPrivacyManifest = false,
 }) {
   final platforms = [
@@ -30,6 +29,7 @@ let package = Package(
     products: [
         .library(name: "$libraryName", targets: ["$pluginName"])
     ],
+    dependencies: [],
     targets: [
         .target(
             name: "$pluginName",
