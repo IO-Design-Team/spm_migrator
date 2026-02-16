@@ -126,8 +126,8 @@ void migratePlatform({required String platform, required String pluginName}) {
   final podspecContent = podspecFile.readAsStringSync();
   final newPodspecContent = podspecContent
       .replaceFirst(
-        "s.source_files = 'Classes/**/*.swift'",
-        "s.source_files = '$pluginName/Sources/$pluginName/**/*.swift'",
+        "s.source_files = 'Classes/**/*'",
+        "s.source_files = '$pluginName/Sources/$pluginName/**/*'",
       )
       .replaceFirst(
         "s.resource_bundles = {'${pluginName}_privacy' => ['Resources/PrivacyInfo.xcprivacy']}",
