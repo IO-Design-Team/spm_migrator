@@ -7,10 +7,16 @@ part of 'podspec.dart';
 // **************************************************************************
 
 Podspec _$PodspecFromJson(Map<String, dynamic> json) => Podspec(
-  dependencies: (json['dependencies'] as Map<String, dynamic>).map(
-    (k, e) =>
-        MapEntry(k, (e as List<dynamic>).map((e) => e as String).toList()),
-  ),
-  platforms: Map<String, String>.from(json['platforms'] as Map),
+  dependencies:
+      (json['dependencies'] as Map<String, dynamic>?)?.map(
+        (k, e) =>
+            MapEntry(k, (e as List<dynamic>).map((e) => e as String).toList()),
+      ) ??
+      const {},
+  platforms:
+      (json['platforms'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ) ??
+      const {},
   subspecs: json['subspecs'] as List<dynamic>? ?? const [],
 );

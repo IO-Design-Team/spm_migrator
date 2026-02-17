@@ -18,8 +18,8 @@ class Podspec {
 
   /// Constructor
   const Podspec({
-    required this.dependencies,
-    required this.platforms,
+    this.dependencies = const {},
+    this.platforms = const {},
     this.subspecs = const [],
   });
 
