@@ -312,6 +312,7 @@ Future<void> buildForPlatform({
   final exitCode = await process.exitCode;
   if (exitCode != 0) {
     print(red('$packageManager build failed for $platform'));
+    print('Fix any issues and run `spm_migrator validate` to try again');
     exit(exitCode);
   }
 }
