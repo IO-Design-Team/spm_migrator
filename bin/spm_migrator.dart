@@ -291,17 +291,28 @@ Future<void> validate({required Pubspec pubspec}) async {
     return;
   }
 
+  final flutterConfigResult = Process.runSync('flutter', ['config', '--list']);
+  final wasSpmEnabled = flutterConfigResult.stdout.contains(
+    'enable-swift-package-manager: true',
+  );
+
   final supportedPlatforms = readSupportedPlatforms(pubspec.flutter);
   final supportedDarwinPlatforms = supportedPlatforms.intersection({
     'ios',
     'macos',
   });
   for (final platform in supportedDarwinPlatforms) {
-    await validatePlatform(platform: platform);
+    final exitCode = await validatePlatform(platform: platform);
+    if (exitCode != 0) break;
   }
+
+  final configFlag = wasSpmEnabled
+      ? '--enable-swift-package-manager'
+      : '--no-enable-swift-package-manager';
+  Process.runSync('flutter', ['config', configFlag]);
 }
 
-Future<void> buildForPlatform({
+Future<int> buildForPlatform({
   required String platform,
   required String packageManager,
 }) async {
@@ -322,18 +333,29 @@ Future<void> buildForPlatform({
   if (exitCode != 0) {
     print(red('$packageManager build failed for $platform'));
     print('Fix any issues and run `spm_migrator validate` to try again');
-    exit(exitCode);
   }
+
+  return exitCode;
 }
 
-Future<void> validatePlatform({required String platform}) async {
+Future<int> validatePlatform({required String platform}) async {
   print('Validating CocoaPods build for $platform...');
-  await buildForPlatform(platform: platform, packageManager: 'CocoaPods');
+  final cocoaPodsExitCode = await buildForPlatform(
+    platform: platform,
+    packageManager: 'CocoaPods',
+  );
+  if (cocoaPodsExitCode != 0) return cocoaPodsExitCode;
   print(green('CocoaPods build successful for $platform\n'));
 
   print('Validating SwiftPM build for $platform...');
-  await buildForPlatform(platform: platform, packageManager: 'SwiftPM');
+  final swiftPMExitCode = await buildForPlatform(
+    platform: platform,
+    packageManager: 'SwiftPM',
+  );
+  if (swiftPMExitCode != 0) return swiftPMExitCode;
   print(green('SwiftPM build successful for $platform\n'));
+
+  return 0;
 }
 
 extension DirectoryExtension on Directory {
