@@ -97,12 +97,14 @@ void migratePlatform({required String platform, required String pluginName}) {
   print('Migrating $platform...');
 
   final classesDirectory = Directory(path.join(platform, 'Classes'));
-  final swiftFiles = classesDirectory.listSync().whereType<File>().where(
-    (e) => path.extension(e.path) == '.swift',
-  );
-  final objectiveCFiles = classesDirectory.listSync().whereType<File>().where(
-    (e) => {'.m', '.h'}.contains(path.extension(e.path)),
-  );
+  final swiftFiles = classesDirectory
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((e) => path.extension(e.path) == '.swift');
+  final objectiveCFiles = classesDirectory
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((e) => {'.m', '.h'}.contains(path.extension(e.path)));
 
   if (swiftFiles.isNotEmpty && objectiveCFiles.isNotEmpty) {
     print(
