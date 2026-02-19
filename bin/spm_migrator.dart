@@ -302,6 +302,11 @@ Future<void> validate({
     if (exitCode != 0) break;
   }
 
+  final configFlag = wasSpmEnabled
+      ? '--enable-swift-package-manager'
+      : '--no-enable-swift-package-manager';
+  Process.runSync('flutter', ['config', configFlag]);
+
   if (exitCode == 0) {
     print(green('Validation complete'));
   } else {
