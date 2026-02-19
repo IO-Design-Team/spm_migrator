@@ -118,7 +118,7 @@ void migratePlatform({required String platform, required String pluginName}) {
     );
     if (!confirm('Migrate plugin to Swift only?')) {
       print(red('Migration aborted'));
-      return;
+      exit(1);
     }
     for (final file in objectiveCFiles) {
       file.deleteSync();
