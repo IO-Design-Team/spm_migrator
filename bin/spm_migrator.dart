@@ -61,17 +61,7 @@ class ValidateCommand extends Command<void> {
   @override
   Future<void> run() async {
     final pubspec = parsePubspec();
-    final supportedPlatforms = readSupportedPlatforms(pubspec.flutter);
-    final supportedDarwinPlatforms = supportedPlatforms.intersection({
-      'ios',
-      'macos',
-    });
-
-    for (final platform in supportedDarwinPlatforms) {
-      await validatePlatform(platform: platform);
-    }
-
-    print(green('Validation complete'));
+    await validate(pubspec: pubspec, requestConfirmation: false);
   }
 }
 
@@ -117,8 +107,8 @@ void migratePlatform({required String platform, required String pluginName}) {
       ),
     );
     if (!confirm('Migrate plugin to Swift only?')) {
-      print(red('Migration aborted'));
-      exit(1);
+      print(red('Migration aborted for $platform'));
+      return;
     }
     for (final file in objectiveCFiles) {
       file.deleteSync();
@@ -249,9 +239,9 @@ void migratePigeon({required String pluginName}) {
       .where((e) => e.path.endsWith('.dart'));
 
   for (final file in dartFiles) {
-    if (!file.readAsStringSync().contains('@ConfigurePigeon')) continue;
-
     final content = file.readAsStringSync();
+    if (!content.contains('@ConfigurePigeon')) continue;
+
     final newContent = content.replaceAllMapped(
       RegExp(r"((?:swiftOut|objcHeaderOut|objcSourceOut): '.+?)\/Classes\/"),
       (m) => '${m[1]}/$pluginName/Sources/$pluginName/',
@@ -278,16 +268,20 @@ No .gitignore file found in this directory. Make sure to ignore the following:
   }
 }
 
-Future<void> validate({required Pubspec pubspec}) async {
+Future<void> validate({
+  required Pubspec pubspec,
+  bool requestConfirmation = true,
+}) async {
   if (!File(path.join('example', 'pubspec.yaml')).existsSync()) {
     print(yellow('No example project found. Manual validation is required.'));
     return;
   }
 
-  if (!confirm(
-    'Do you want to validate the builds for all supported platforms?'
-    ' If manual migrations are required, the build will likely fail.',
-  )) {
+  if (requestConfirmation &&
+      !confirm(
+        'Do you want to validate the builds for all supported platforms?'
+        ' If manual migrations are required, the build will likely fail.',
+      )) {
     return;
   }
 
@@ -301,21 +295,27 @@ Future<void> validate({required Pubspec pubspec}) async {
     'ios',
     'macos',
   });
+
+  var exitCode = 0;
   for (final platform in supportedDarwinPlatforms) {
-    final exitCode = await validatePlatform(platform: platform);
+    exitCode |= await validatePlatform(platform: platform);
     if (exitCode != 0) break;
   }
 
-  final configFlag = wasSpmEnabled
-      ? '--enable-swift-package-manager'
-      : '--no-enable-swift-package-manager';
-  Process.runSync('flutter', ['config', configFlag]);
+  if (exitCode == 0) {
+    print(green('Validation complete'));
+  } else {
+    print(red('Validation failed'));
+    print('Fix any issues and run `spm_migrator validate` to try again');
+  }
 }
 
 Future<int> buildForPlatform({
   required String platform,
   required String packageManager,
 }) async {
+  print('Validating $packageManager build for $platform...');
+
   final configFlag = packageManager == 'CocoaPods'
       ? '--no-enable-swift-package-manager'
       : '--enable-swift-package-manager';
@@ -330,30 +330,27 @@ Future<int> buildForPlatform({
   );
 
   final exitCode = await process.exitCode;
-  if (exitCode != 0) {
+  if (exitCode == 0) {
+    print(green('$packageManager build successful for $platform\n'));
+  } else {
     print(red('$packageManager build failed for $platform'));
-    print('Fix any issues and run `spm_migrator validate` to try again');
   }
 
   return exitCode;
 }
 
 Future<int> validatePlatform({required String platform}) async {
-  print('Validating CocoaPods build for $platform...');
   final cocoaPodsExitCode = await buildForPlatform(
     platform: platform,
     packageManager: 'CocoaPods',
   );
   if (cocoaPodsExitCode != 0) return cocoaPodsExitCode;
-  print(green('CocoaPods build successful for $platform\n'));
 
-  print('Validating SwiftPM build for $platform...');
   final swiftPMExitCode = await buildForPlatform(
     platform: platform,
     packageManager: 'SwiftPM',
   );
   if (swiftPMExitCode != 0) return swiftPMExitCode;
-  print(green('SwiftPM build successful for $platform\n'));
 
   return 0;
 }
