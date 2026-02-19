@@ -111,7 +111,9 @@ void migratePlatform({required String platform, required String pluginName}) {
       yellow(
         'The $platform directory contains both Swift and Objective-C files.'
         ' SwiftPM does not support mixed language targets.'
-        ' If you did not write any Objective-C, the plugin can be automatically migrated.',
+        ' If you did not write any Objective-C, the plugin can be automatically migrated.'
+        ' If this plugin does contain Objective-C code, it will need to be manually migrated to a split-target plugin.'
+        ' See the in_app_purchase plugin for an example.',
       ),
     );
     if (!confirm('Migrate plugin to Swift only?')) {
