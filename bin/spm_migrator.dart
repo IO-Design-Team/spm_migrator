@@ -239,15 +239,20 @@ void migratePlatform({required String platform, required String pluginName}) {
 }
 
 void migratePigeon({required String pluginName}) {
-  final pigeonsFile = File(path.join('pigeons', 'messages.dart'));
-  if (pigeonsFile.existsSync()) {
-    final content = pigeonsFile.readAsStringSync();
-    final newContent = content.replaceFirstMapped(
-      RegExp(r"swiftOut: '(.+?)\/Classes\/messages.g.swift',"),
-      (m) =>
-          "swiftOut: '${m[1]}/$pluginName/Sources/$pluginName/messages.g.swift',",
+  final dartFiles = Directory.current
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((e) => e.path.endsWith('.dart'));
+
+  for (final file in dartFiles) {
+    if (!file.readAsStringSync().contains('@ConfigurePigeon')) continue;
+
+    final content = file.readAsStringSync();
+    final newContent = content.replaceAllMapped(
+      RegExp(r"((?:swiftOut|objcHeaderOut|objcSourceOut): '.+?)\/Classes\/"),
+      (m) => '${m[1]}/$pluginName/Sources/$pluginName/',
     );
-    pigeonsFile.writeAsStringSync(newContent);
+    file.writeAsStringSync(newContent);
   }
 }
 
